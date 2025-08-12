@@ -1,13 +1,14 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
-int index = 0;
+int indexRegex;
 char *regex;
 int length;
 
 int state;
-const char BR = '¤';
-const char WC = '§';
+const char BR = 'B';
+const char WC = 'W';
 
 // the table.
 char states[256];
@@ -18,14 +19,15 @@ int expression();
 int term();
 int factor();
 void printTable();
+void setState(int s, char c, int n1, int n2);
 
-int REcompile(char **regexPointer)
+int REcompile(char *inputRegex)
 {
-    regex = *regexPointer;
+    regex = inputRegex;
     length = strlen(regex);
 
-    // index in regex array we are looking at
-    index = 0;
+    // indexRegex in regex array we are looking at
+    indexRegex = 0;
 
     // which column in the table we are building
     state = 1;
@@ -34,16 +36,20 @@ int REcompile(char **regexPointer)
 
     setState(0, BR, v, v);
 
-    setState(state, BR, -1, -1);
+    // setState(state, BR, -1, -1);
 
     printTable();
+
+    return 0;
 }
 
 void printTable()
 {
+    printf("PRINTING TABLE\n");
+
     for (int i = 0; i < state; i++)
     {
-        printf(",%c", states[i]);
+        printf(" %c", states[i]);
     }
     printf("\n");
 
@@ -144,10 +150,10 @@ int expression()
 
     int r = term();
 
-    if (index == length)
+    if (indexRegex == length)
         return r;
 
-    if (isvocab(regex[index]) == 1 || regex[index] == '(' || regex[index] == '\\')
+    if (isvocab(regex[indexRegex]) == 1 || regex[indexRegex] == '(' || regex[indexRegex] == '\\')
     {
         int startState = state;
         int entryPoint = expression();
@@ -155,7 +161,7 @@ int expression()
         setStartingState(startState, entryPoint, 0, startState);
         // match any twos with threes
     }
-    else if (regex[index] == ')')
+    else if (regex[indexRegex] == ')')
     {
         return r;
     }
@@ -178,15 +184,15 @@ int term()
     int factor_ = factor();
     int origin;
 
-    if (index == length)
+    if (indexRegex == length)
         return factor_;
 
-    switch (regex[index])
+    switch (regex[indexRegex])
     {
     case '*':
         // build branch
         setState(state, BR, factor_, state + 1);
-        index++;
+        indexRegex++;
         state++;
 
         // return new start state
@@ -198,7 +204,7 @@ int term()
 
         setState(state, BR, factor_, state + 1);
 
-        index++;
+        indexRegex++;
         state++;
 
         int prevTerm = term();
@@ -216,7 +222,7 @@ int term()
     case '?':
         // zero or one time
         setState(state, BR, factor_, state + 1);
-        index++;
+        indexRegex++;
         state++;
 
         // make the factor_ point to next state aswell
@@ -227,9 +233,9 @@ int term()
     case '+':
         // one or more times
         origin = state;
-        // setState(state, regex[index - 1], state + 1, state + 1);
+        // setState(state, regex[indexRegex - 1], state + 1, state + 1);
         setState(state, BR, factor_, state + 1);
-        index++;
+        indexRegex++;
         state++;
 
         // return new start state
@@ -247,44 +253,49 @@ int factor()
     // F -> (E)
     // F -> \x
 
-    if (index == length)
+    setState(state, regex[indexRegex], state + 1, state + 1);
+    indexRegex++;
+    state++;
+    return state - 1;
+
+    if (indexRegex == length)
         invalidSyntax();
 
-    if (regex[index] == '.')
+    if (regex[indexRegex] == '.')
     {
         setState(state, WC, state + 1, state + 1);
-        index++;
+        indexRegex++;
         state++;
         return state - 1;
     }
 
-    else if (isvocab(regex[index]) == 1)
+    else if (isvocab(regex[indexRegex]) == 1)
     {
-        setState(state, regex[index], state + 1, state + 1);
-        index++;
+        setState(state, regex[indexRegex], state + 1, state + 1);
+        indexRegex++;
         state++;
         return state - 1;
     }
 
-    else if (regex[index] == '\\')
+    else if (regex[indexRegex] == '\\')
     {
-        index++;
-        setState(state, regex[index], state + 1, state + 1);
-        index++;
+        indexRegex++;
+        setState(state, regex[indexRegex], state + 1, state + 1);
+        indexRegex++;
         state++;
         return state - 1;
     }
 
-    else if (regex[index] == '(')
+    else if (regex[indexRegex] == '(')
     {
-        index++;
+        indexRegex++;
         int r = expression();
-        if (index == length)
+        if (indexRegex == length)
             invalidSyntax();
 
-        if (regex[index] == ')')
+        if (regex[indexRegex] == ')')
         {
-            index++;
+            indexRegex++;
             return r;
         }
         else
