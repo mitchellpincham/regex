@@ -8,9 +8,8 @@ int length;
 
 int state;
 const char BR = 'B';
-const char WC = 'W';
 
-// the table.
+// the rows of the table.
 char states[256];
 int next1[256];
 int next2[256];
@@ -20,6 +19,7 @@ int term();
 int factor();
 void printTable();
 void setState(int s, char c, int n1, int n2);
+int toCSV();
 
 int REcompile(char *inputRegex)
 {
@@ -36,16 +36,23 @@ int REcompile(char *inputRegex)
 
     setState(0, BR, v, v);
 
-    // setState(state, BR, -1, -1);
+    printf("%d\n", state);
 
-    printTable();
+    setState(state++, BR, -1, -1);
+
+    if (toCSV())
+        return 1;
 
     return 0;
 }
 
 void printTable()
 {
-    printf("PRINTING TABLE\n");
+    for (int i = 0; i < state; i++)
+    {
+        printf(" %d", i);
+    }
+    printf("\n");
 
     for (int i = 0; i < state; i++)
     {
@@ -64,6 +71,50 @@ void printTable()
         printf(" %d", next2[i]);
     }
     printf("\n");
+}
+
+int toCSV()
+{
+    // Open file for writing ("w" = write)
+    FILE *fp = fopen("output.csv", "w");
+    if (fp == NULL)
+    {
+        printf("Error opening file\n");
+        return 1;
+    }
+
+    // Write header row
+    // fprintf(fp, "*");
+    for (int i = 0; i < state; i++)
+    {
+        fprintf(fp, ",%d", i);
+    }
+    fprintf(fp, "\n");
+
+    for (int i = 0; i < state; i++)
+    {
+        if (states[i] == BR)
+            fprintf(fp, ",BR");
+        else
+            fprintf(fp, ",%c", states[i]);
+    }
+    fprintf(fp, "\n");
+
+    for (int i = 0; i < state; i++)
+    {
+        fprintf(fp, ",%d", next1[i]);
+    }
+    fprintf(fp, "\n");
+
+    for (int i = 0; i < state; i++)
+    {
+        fprintf(fp, ",%d", next2[i]);
+    }
+    fprintf(fp, "\n");
+
+    // Close file
+    fclose(fp);
+    return 0;
 }
 
 void setState(int s, char c, int n1, int n2)
@@ -139,7 +190,7 @@ int isvocab(char c)
      * @return true or false whether c is valid volcabolary
      */
 
-    return (c == '(' || c == ')' || c == '+' || c == '?' || c == '*' || c == '\\' || c == '|' || c == BR || c == WC) ? 0 : 1;
+    return (c == '(' || c == ')' || c == '+' || c == '?' || c == '*' || c == '|' || c == BR) ? 0 : 1;
 }
 
 int expression()
@@ -153,13 +204,12 @@ int expression()
     if (indexRegex == length)
         return r;
 
-    if (isvocab(regex[indexRegex]) == 1 || regex[indexRegex] == '(' || regex[indexRegex] == '\\')
+    if (isvocab(regex[indexRegex]) == 1 || regex[indexRegex] == '(')
     {
         int startState = state;
         int entryPoint = expression();
 
         setStartingState(startState, entryPoint, 0, startState);
-        // match any twos with threes
     }
     else if (regex[indexRegex] == ')')
     {
@@ -253,21 +303,8 @@ int factor()
     // F -> (E)
     // F -> \x
 
-    setState(state, regex[indexRegex], state + 1, state + 1);
-    indexRegex++;
-    state++;
-    return state - 1;
-
     if (indexRegex == length)
         invalidSyntax();
-
-    if (regex[indexRegex] == '.')
-    {
-        setState(state, WC, state + 1, state + 1);
-        indexRegex++;
-        state++;
-        return state - 1;
-    }
 
     else if (isvocab(regex[indexRegex]) == 1)
     {
@@ -276,16 +313,6 @@ int factor()
         state++;
         return state - 1;
     }
-
-    else if (regex[indexRegex] == '\\')
-    {
-        indexRegex++;
-        setState(state, regex[indexRegex], state + 1, state + 1);
-        indexRegex++;
-        state++;
-        return state - 1;
-    }
-
     else if (regex[indexRegex] == '(')
     {
         indexRegex++;
