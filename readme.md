@@ -1,10 +1,10 @@
 ### To compile
 
-gcc main.c REcompile.c -o out
+gcc main.c REcompile.c REsearch.c -o out
 
 ### To run
 
-out "REGEX PATTERN"
+out "REGEX PATTERN" "test.txt
 
 # TODO:
 

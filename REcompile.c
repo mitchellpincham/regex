@@ -1,13 +1,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#define BR 'B'
 
 int indexRegex;
 char *regex;
 int length;
 
 int state;
-const char BR = 'B';
 
 // the rows of the table.
 char states[256];

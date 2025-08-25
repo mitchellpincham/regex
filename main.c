@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include "compile.h"
+#include "search.h"
 
 int main(int argc, char *argv[])
 {
 
-    if (argc != 2)
+    if (argc != 3)
     {
-        printf("Expected one argument");
+        printf("Expected two arguments; regex & filename");
         return -1;
     }
 
@@ -15,7 +16,9 @@ int main(int argc, char *argv[])
 
     // printf("%s\n", regex);
 
-    REcompile(regex);
+    // REcompile(regex);
+
+    REsearch("output.csv", "test.txt");
 
     return 0;
 }
